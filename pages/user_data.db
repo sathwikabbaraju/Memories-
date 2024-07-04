@@ -1,0 +1,67 @@
+import sqlite3
+import cv2
+import numpy as np
+
+# Connect to SQLite database
+conn = sqlite3.connect('user_data.db')
+c = conn.cursor()
+
+# Initialize SQLite database
+def init_db():
+    c.execute('''CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT,
+                username TEXT UNIQUE,
+                password TEXT,
+                face_encoding BLOB
+                )''')
+    conn.commit()
+
+# Function to convert image to binary
+def image_to_binary(image):
+    _, buffer = cv2.imencode('.jpg', image)
+    return buffer.tobytes()
+
+# Function to add a user to the database
+def add_user(name, username, password, face_encoding):
+    c.execute("INSERT INTO users (name, username, password, face_encoding) VALUES (?, ?, ?, ?)",
+              (name, username, password, image_to_binary(face_encoding)))
+    conn.commit()
+
+# Function to fetch user details by username
+def get_user_by_username(username):
+    c.execute("SELECT * FROM users WHERE username=?", (username,))
+    return c.fetchone()
+
+# Function to fetch user details by ID
+def get_user_by_id(user_id):
+    c.execute("SELECT * FROM users WHERE id=?", (user_id,))
+    return c.fetchone()
+
+# Example usage:
+if __name__ == "__main__":
+    init_db()
+
+    # Example: Adding a user
+    name = "John Doe"
+    username = "johndoe"
+    password = "password123"
+    # Assuming face_encoding is a numpy array or image data obtained from face_recognition
+    face_encoding = np.random.rand(128)  # Replace with actual face encoding data
+
+    add_user(name, username, password, face_encoding)
+
+    # Example: Fetching a user by username
+    user = get_user_by_username(username)
+    if user:
+        print(f"User found: {user}")
+    else:
+        print("User not found.")
+
+    # Example: Fetching a user by ID
+    user_id = 1  # Replace with actual user ID
+    user = get_user_by_id(user_id)
+    if user:
+        print(f"User found: {user}")
+    else:
+        print("User not found.")
